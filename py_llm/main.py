@@ -7,15 +7,33 @@ def format_qwen_prompt(user_message):
     formated_prompt = f"<|im_start|>system\nYou are a helpful coding assistant.<|im_end|>\n<|im_start|>user\n{user_message}<|im_end|>\n<|im_start|>assistant"
     return formated_prompt
 
+def format_codellama_prompt(user_message):
+    system_prompt = "あなたは誠実で優秀な日本人のアシスタントです。"
+    return f"<s>[INST] <<SYS>>\n{system_prompt}\n<</SYS>>\n\n{user_message} [/INST]"
+
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_path", default="../model/qwen2.5-coder-7b-instruct-q4_k_m.gguf")
+    #parser.add_argument("--model_path", default="../model/qwen2.5-coder-7b-instruct-q4_k_m.gguf")
+    parser.add_argument("--model_path", default="../model/elyza-japanese-CodeLlama-7b-instruct-q4_K_M/ELYZA-japanese-CodeLlama-7b-instruct-q4_K_M.gguf")
     parser.add_argument("--prompt", required=True)
     args = parser.parse_args()
     
-    model_path = args.model_path
-    prompt = format_qwen_prompt(args.prompt)
+    model_path = args.model_path.lower()
+    if "qwen" in model_path:
+        prompt = format_qwen_prompt(args.prompt)
+        stop = ["<|im_end|>", "<|im_start|>"]
+    elif "codellama" in model_path or "elyza" in model_path:
+        prompt = format_codellama_prompt(args.prompt) 
+        stop = ["</s>"]
+    else:
+        prompt = args.prompt
+
+    prompt = ""
+    if model_path in "qwen":
+        prompt = format_qwen_prompt(args.prompt)
+    elif model_path in "CodeLlama":
+        prompt = format_codellama_prompt(args.prompt)
 
     # Load model
     load_start = time.perf_counter()
@@ -38,7 +56,8 @@ def main():
                 temperature=0.7,  # 温度パラメータ（0.0-1.0、低いほど決定的）
                 top_p=0.95,  # Top-pサンプリング
                 echo=False,  # プロンプトを出力に含めない
-                stop=["<|im_end|>", "<|im_start|>"]  # Qwenの停止トークン
+                stop=stop
+                #stop=["<|im_end|>", "<|im_start|>"]  # Qwenの停止トークン
                 #stop=["<|im_end|>", "###", "\n\n\n"]  # 停止条件
                 )
     infer_time = time.perf_counter() - infer_start
